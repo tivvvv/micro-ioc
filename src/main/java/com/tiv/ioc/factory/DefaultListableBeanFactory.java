@@ -85,9 +85,49 @@ public class DefaultListableBeanFactory implements BeanFactory {
         return beanInstance;
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public <T> T getBean(Class<T> requiredType) {
-        return null;
+        String[] resolvedBeanNames = allBeanNamesByType.get(requiredType);
+        if (resolvedBeanNames == null) {
+            List<String> candidateBeanNames = new ArrayList<>();
+            for (String beanName : beanDefinitionNames) {
+                Object beanInstance = singletonObjectMap.get(beanName);
+                if (beanInstance != null) {
+                    if (requiredType.isInstance(beanInstance)) {
+                        candidateBeanNames.add(beanName);
+                    }
+                } else {
+                    BeanDefinition beanDefinition = beanDefinitionMap.get(beanName);
+                    if (beanDefinition != null) {
+                        GenericBeanDefinition genericBeanDefinition = (GenericBeanDefinition) beanDefinition;
+                        if (genericBeanDefinition.hasBeanClass()) {
+                            Class<?> beanClass = genericBeanDefinition.getBeanClass();
+                            if (requiredType.isAssignableFrom(beanClass)) {
+                                candidateBeanNames.add(beanName);
+                            }
+                        } else {
+                            String beanClassName = genericBeanDefinition.getBeanClassName();
+                            try {
+                                Class<?> beanClass = Class.forName(beanClassName);
+                                genericBeanDefinition.setBeanClass(beanClass);
+                                if (requiredType.isAssignableFrom(beanClass)) {
+                                    candidateBeanNames.add(beanName);
+                                }
+                            } catch (Exception e) {
+                                throw new BeanException("bean class parse error", e);
+                            }
+                        }
+                    }
+                }
+            }
+            resolvedBeanNames = candidateBeanNames.toArray(new String[0]);
+            allBeanNamesByType.put(requiredType, resolvedBeanNames);
+        }
+        if (resolvedBeanNames.length > 1) {
+            throw new BeanException("more than one bean found");
+        }
+        return (T) getBean(resolvedBeanNames[0]);
     }
 
     @Override
