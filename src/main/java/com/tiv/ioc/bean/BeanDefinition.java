@@ -1,7 +1,7 @@
 package com.tiv.ioc.bean;
 
 /**
- * bean定义接口
+ * bean定义信息接口
  */
 public interface BeanDefinition {
 

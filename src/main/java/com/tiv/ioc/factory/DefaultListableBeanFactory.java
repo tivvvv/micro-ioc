@@ -4,7 +4,14 @@ import com.sun.org.apache.xerces.internal.parsers.DOMParser;
 import com.tiv.ioc.bean.BeanDefinition;
 import com.tiv.ioc.bean.GenericBeanDefinition;
 import com.tiv.ioc.exception.BeanException;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
 
+import java.beans.Introspector;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -31,7 +38,7 @@ public class DefaultListableBeanFactory implements BeanFactory {
     private final List<String> beanDefinitionNames = new ArrayList<>();
 
     /**
-     * 存储bean名称和定义的映射
+     * 存储bean名称和定义信息的映射
      */
     private final Map<String, BeanDefinition> beanDefinitionMap = new ConcurrentHashMap<>();
 
@@ -45,6 +52,76 @@ public class DefaultListableBeanFactory implements BeanFactory {
      */
     private final Map<String, Object> singletonObjectMap = new ConcurrentHashMap<>();
 
+    /**
+     * 解析xml文件构造器
+     *
+     * @param locations
+     */
+    public DefaultListableBeanFactory(String... locations) {
+        this.locations = locations;
+        for (String location : locations) {
+            InputStream inputStream = DefaultListableBeanFactory.class.getClassLoader().getResourceAsStream(location);
+            Document document = null;
+            try {
+                domParser.parse(new InputSource(inputStream));
+                document = domParser.getDocument();
+                domParser.dropDocumentReferences();
+            } catch (Exception e) {
+                throw new BeanException("document parse error", e);
+            }
+
+            if (document == null) {
+                throw new BeanException("document location not exist");
+            }
+
+            Element root = document.getDocumentElement();
+            NodeList nodeList = root.getChildNodes();
+            for (int i = 0; i < nodeList.getLength(); i++) {
+                Node node = nodeList.item(i);
+                if (node instanceof Element && "bean".equals(node.getNodeName())) {
+                    Element element = (Element) node;
+                    String id = element.getAttribute("id");
+                    String beanClassName = element.getAttribute("class");
+                    if (beanClassName.isEmpty()) {
+                        throw new BeanException("bean class name not exist");
+                    }
+
+                    if (id.isEmpty()) {
+                        id = generateBeanName(beanClassName);
+                    }
+
+                    GenericBeanDefinition beanDefinition = new GenericBeanDefinition();
+                    beanDefinition.setBeanName(id);
+                    beanDefinition.setBeanClassName(beanClassName);
+
+                    // 注册bean定义信息
+                    beanDefinitionMap.put(id, beanDefinition);
+                    beanDefinitionNames.add(id);
+                }
+
+            }
+        }
+    }
+
+    /**
+     * 生成bean名称
+     *
+     * @param className
+     * @return
+     */
+    private String generateBeanName(String className) {
+        int nameEndIndex = className.indexOf("$$");
+        if (nameEndIndex == -1) {
+            nameEndIndex = className.length();
+        }
+
+        int lastDotIndex = className.lastIndexOf(46);
+        String shortName = className.substring(lastDotIndex + 1, nameEndIndex);
+        shortName = shortName.replace('$', '.');
+
+        return Introspector.decapitalize(shortName);
+    }
+
     @Override
     public Object getBean(String name) {
         // 从缓存中获取
@@ -52,7 +129,7 @@ public class DefaultListableBeanFactory implements BeanFactory {
             return singletonObjectMap.get(name);
         }
 
-        // 获取bean定义
+        // 获取bean定义信息
         BeanDefinition beanDefinition = beanDefinitionMap.get(name);
         if (beanDefinition == null) {
             throw new BeanException("bean definition not exist");

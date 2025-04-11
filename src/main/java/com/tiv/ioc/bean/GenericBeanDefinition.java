@@ -3,7 +3,7 @@ package com.tiv.ioc.bean;
 import com.tiv.ioc.exception.BeanException;
 
 /**
- * 通用bean定义类
+ * 通用bean定义信息类
  */
 public class GenericBeanDefinition implements BeanDefinition {
 
