@@ -130,8 +130,17 @@ public class DefaultListableBeanFactory implements BeanFactory {
         return (T) getBean(resolvedBeanNames[0]);
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public <T> T getBean(String name, Class<T> requiredType) {
-        return null;
+        Object beanInstance = getBean(name);
+        if (beanInstance == null) {
+            throw new BeanException("bean not exist");
+        }
+
+        if (!requiredType.isInstance(beanInstance)) {
+            throw new BeanException("bean type not match");
+        }
+        return (T) beanInstance;
     }
 }
