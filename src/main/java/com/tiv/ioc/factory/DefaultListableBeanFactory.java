@@ -2,7 +2,7 @@ package com.tiv.ioc.factory;
 
 import com.sun.org.apache.xerces.internal.parsers.DOMParser;
 import com.tiv.ioc.bean.BeanDefinition;
-import com.tiv.ioc.bean.GenericBeanDefinition;
+import com.tiv.ioc.bean.impl.GenericBeanDefinition;
 import com.tiv.ioc.exception.BeanException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;

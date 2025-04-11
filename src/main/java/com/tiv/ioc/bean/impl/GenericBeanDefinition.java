@@ -1,5 +1,6 @@
-package com.tiv.ioc.bean;
+package com.tiv.ioc.bean.impl;
 
+import com.tiv.ioc.bean.BeanDefinition;
 import com.tiv.ioc.exception.BeanException;
 
 /**
