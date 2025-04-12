@@ -4,6 +4,9 @@ import com.sun.org.apache.xerces.internal.parsers.DOMParser;
 import com.tiv.ioc.bean.BeanDefinition;
 import com.tiv.ioc.bean.impl.GenericBeanDefinition;
 import com.tiv.ioc.exception.BeanException;
+import com.tiv.ioc.io.Resource;
+import com.tiv.ioc.io.ResourceLoader;
+import com.tiv.ioc.io.impl.DefaultResourceLoader;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -53,6 +56,11 @@ public class DefaultListableBeanFactory implements BeanFactory {
     private final Map<String, Object> singletonObjectMap = new ConcurrentHashMap<>();
 
     /**
+     * 资源加载器
+     */
+    private final ResourceLoader resourceLoader = new DefaultResourceLoader();
+
+    /**
      * 解析xml文件构造器
      *
      * @param locations
@@ -60,8 +68,9 @@ public class DefaultListableBeanFactory implements BeanFactory {
     public DefaultListableBeanFactory(String... locations) {
         this.locations = locations;
         for (String location : locations) {
-            InputStream inputStream = DefaultListableBeanFactory.class.getClassLoader().getResourceAsStream(location);
-            Document document = null;
+            Resource resource = resourceLoader.getResource(location);
+            InputStream inputStream = resource.getInputStream();
+            Document document;
             try {
                 domParser.parse(new InputSource(inputStream));
                 document = domParser.getDocument();
