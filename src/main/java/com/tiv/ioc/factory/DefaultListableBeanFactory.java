@@ -107,7 +107,6 @@ public class DefaultListableBeanFactory implements BeanFactory {
                     beanDefinitionMap.put(id, beanDefinition);
                     beanDefinitionNames.add(id);
                 }
-
             }
         }
     }
